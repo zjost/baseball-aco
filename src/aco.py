@@ -6,6 +6,10 @@ value of a metric that's specified as a column in the DataFrame
 while adhering to a salary cap
 """
 
+from copy import copy, deepcopy
+import random
+from multiprocessing import Pool
+
 import pandas as pd
 
 class Ant(object):
@@ -27,10 +31,8 @@ class Ant(object):
 
 
     """
-        # XXX:TODO Modify the probability calculation to have a third term
-        # that is completely random.  
-        
-        
+    # XXX:TODO Modify the probability calculation to have a third term
+    # that is completely random.  
     
     def __init__(self, positions, metric, max_salary, data, q, alpha, beta):
         self.positions = copy(positions)
@@ -99,40 +101,6 @@ def choose_candidate(candidate_df):
     else:
         return candidate_df
 
-def build_roster(ant):
-    """
-    Builds a Roster from an ant
-    """
-    roster = pd.DataFrame() 
-    ant.remaining_salary = ant.max_salary
-    for i in range(len(ant.positions)):
-        # Get a player position to fill
-        position = random.choice(ant.positions.keys())
-        # Get a candidate list (a deep copy of the filtered self.data)
-        candidates = ant.get_candidates(
-            "position", position, "salary", ant.remaining_salary)
-        
-        # If there are players in the roster, drop them from candidate
-        # DataFrame to avoid redundant choices
-        if not roster.empty:
-            candidates.drop(roster.index, inplace=True, errors='ignore')
-        
-        # If no eligable candidates, return the empty DataFrame, 
-        # indicating a Null roster
-        if len(candidates) == 0:
-            return candidates
-            
-        candidates['probabilities'] = ant.calculate_probabilities(candidates)
-        # Choose a candidate
-        candidate = ant.choose_candidate(candidates)
-        roster = roster.append(candidate)
-        # Remove position from future options
-        ant.positions.pop(position)
-        # Update salary
-        ant.remaining_salary -= candidate.salary.values[0]
-        
-    return Roster(roster, ant.metric)
-
 class Roster(object):
     """
     An object that represents a player roster
@@ -155,6 +123,40 @@ class Roster(object):
     @property
     def metric_sum(self):
         return sum(self.df[self.metric].values)
+
+def build_roster(ant):
+    """
+    Builds a Roster from an ant
+    """
+    roster = pd.DataFrame()
+    ant.remaining_salary = ant.max_salary
+    for i in range(len(ant.positions)):
+        # Get a player position to fill
+        position = random.choice(ant.positions.keys())
+        # Get a candidate list (a deep copy of the filtered self.data)
+        candidates = ant.get_candidates(
+            "position", position, "salary", ant.remaining_salary)
+        
+        # If there are players in the roster, drop them from candidate
+        # DataFrame to avoid redundant choices
+        if not roster.empty:
+            candidates.drop(roster.index, inplace=True, errors='ignore')
+        
+        # If no eligable candidates, return the empty DataFrame, 
+        # indicating a Null roster
+        if len(candidates) == 0:
+            return Roster(candidates, ant.metric)
+            
+        candidates['probabilities'] = ant.calculate_probabilities(candidates)
+        # Choose a candidate
+        candidate = choose_candidate(candidates)
+        roster = roster.append(candidate)
+        # Remove position from future options
+        ant.positions.pop(position)
+        # Update salary
+        ant.remaining_salary -= candidate.salary.values[0]
+        
+    return Roster(roster, ant.metric)
 
 class Colony(object):
     
@@ -259,9 +261,9 @@ class Colony(object):
             pool.close()
             pool.join()
 
-            for roster in results:
+            for i, roster in enumerate(results):
                 if roster.metric_sum > self.best_roster_metric:
-                    self.best_roster_metric = roster_metric
+                    self.best_roster_metric = roster.metric_sum
                     self.best_roster = roster
                     self.turbo_boost(roster.df)
                 

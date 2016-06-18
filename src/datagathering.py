@@ -18,8 +18,9 @@ def load_html_page(filepath):
     r = ""
     with open(filepath, 'r') as f:
         r = f.read()
-
-    soup = BeautifulSoup(r)
+    
+    soup = BeautifulSoup(r, "lxml")
+    
     return soup
 
 class RotoBattingData(object):
