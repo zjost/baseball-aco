@@ -120,6 +120,10 @@ class Roster(object):
     def __getitem__(self, val):
         return self.df[val]
 
+    def __repr__(self):
+        # Use __repr__ method of pandas df
+        return self.df.__repr__()
+    
     @property
     def metric_sum(self):
         return sum(self.df[self.metric].values)

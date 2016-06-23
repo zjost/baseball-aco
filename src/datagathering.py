@@ -29,7 +29,7 @@ class RotoBattingData(object):
         "name" : "Name",
         "salary" : "Salary",
         "team" : "Team",
-        "homeBool" : "Home?",
+        #"homeBool" : "Home?",
         "position" : "Position",
         "handedness" : "Hand",
         "order" : "Order",
@@ -51,7 +51,8 @@ class RotoBattingData(object):
     }
     
     # Columns that should have Boolean type
-    bool_columns = ["homeBool", "platoonAdvantage"]
+    #bool_columns = ["homeBool", "platoonAdvantage"]
+    bool_columns = ["platoonAdvantage"]
     # Columns that should have float type
     float_columns = ["vegasTotal", "vegasMovement", "ab", "batAvg", 
                      "weightedOba","iso", "obp", "slg", "ops", "proj_points", 
@@ -180,7 +181,7 @@ class RotoPitchingData(RotoBattingData):
         "name" : "Name",
         "salary" : "Salary",
         "team" : "Team",
-        "homeBool" : "Home?",
+        #"homeBool" : "Home?",
         "position" : "Position",
         "handedness" : "Hand",
         "opposingTeam" : "Opp",
@@ -208,7 +209,8 @@ class RotoPitchingData(RotoBattingData):
         "points_p_$1k" : "Pt/$/K"
     }
     
-    bool_columns = ["homeBool"]
+    #bool_columns = ["homeBool"]
+    bool_columns = []
     
     float_columns = [
         "vegasOU", "vegasLine", "vegasTotal", "vegasMovement", 

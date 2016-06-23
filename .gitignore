@@ -3,3 +3,5 @@ data/
 *.ipynb
 *.swp
 *.pyc
+luigi/
+output/
