@@ -18,6 +18,19 @@ def load_roto_data(date_str, batting_bool):
 
     return roto.df
 
+def load_dk_data(date_str, batting_bool):
+    """
+    Loads the relevant Roto Data class and returns the pandas dataframe
+    """
+    parent_dir = os.path.join(os.path.dirname(__file__), os.pardir)
+    file_dir = os.path.join(parent_dir, 'data', 'draftkings', date_str)
+    if batting_bool:
+        roto = RotoBattingData(os.path.join(file_dir, "batting.html"))
+    else:
+        roto = RotoPitchingData(os.path.join(file_dir, "pitching.html"))
+
+    return roto.df
+
 if __name__ == "__main__":
 
     positions = {"P1" : "P", "C" : "C", "1B" : "1B", "2B" : "2B", "SS": "SS", 

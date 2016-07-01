@@ -69,6 +69,7 @@ class RotoBattingData(object):
         
         # Convert strings to appropriate data types
         self.update_salary()
+        self.update_teams()
         for column in self.bool_columns:
             self.update_bool(column)
         
@@ -97,6 +98,14 @@ class RotoBattingData(object):
                 float(salary.strip().replace("K", "").replace("$", ""))*1000)
         
         self.salary = new_salaries
+        
+    def update_teams(self):
+        """ Converts string type of "@MIA" to "MIA" """
+        new_teams = list()
+        for team in self.team:
+            new_teams.append(team.replace('@', '').strip())
+        
+        self.team = new_teams
         
     def update_bool(self, attribute):
         """ Converts string type to int """
