@@ -12,6 +12,14 @@ from multiprocessing import Pool
 
 import pandas as pd
 
+def get_positional_players(df, position_column, position):
+    # Handle players with multiple positions
+    correct_positions = df[position_column].str.split(
+        '/', expand=True).isin(
+            [position]).apply(sum, axis=1).astype(bool)
+
+    return deepcopy(df[correct_positions])
+
 class Ant(object):
     """ 
     Object that builds a roster using ACO
@@ -62,9 +70,12 @@ class Ant(object):
             salary (float): The remaining salary
         """
         candidate_position = self.positions[position_key]
-        return deepcopy(self.data[
-            (self.data[position_column]==candidate_position) & \
-            (self.data[salary_column] <= salary)])
+
+        positional_candidates = get_positional_players(
+            self.data, position_column, candidate_position)
+
+        # Filter to players under remaining salary
+        return positional_candidates[positional_candidates[salary_column] <= salary]
     
     def calculate_probabilities(self, candidate_df):
         """
@@ -96,8 +107,8 @@ def choose_candidate(candidate_df):
             return candidate_df.sample(1, weights="probabilities")
         except:
             print "Problem choosing a candidate. Check the probabilities!"
-            print "Candidate df = "
-            print candidate_df
+            #print "Candidate df = "
+            #print candidate_df
     else:
         return candidate_df
 
@@ -150,7 +161,7 @@ def build_roster(ant):
         # indicating a Null roster
         if len(candidates) == 0:
             return Roster(candidates, ant.metric)
-            
+           
         candidates['probabilities'] = ant.calculate_probabilities(candidates)
         # Choose a candidate
         candidate = choose_candidate(candidates)
@@ -165,7 +176,8 @@ def build_roster(ant):
 class Colony(object):
     
     number_of = 3.0 # number of outfielders
-    max_salary = 35000
+    number_p = 2.0 # number of pitchers
+    max_salary = 50000
     
     q = 10.0
     boost_amount = 2.0
@@ -199,7 +211,10 @@ class Colony(object):
                 continue
             else:
                 positions.append(value)
-                counts.append(sum(self.data.position==value))
+
+                positional_candidates = get_positional_players(
+                    self.data, "position", value)
+                counts.append(len(positional_candidates))
             
         return pd.DataFrame.from_dict(
             {"position": positions, "count" : counts})
@@ -208,7 +223,9 @@ class Colony(object):
         """ Adds a count to self.data indicating the number 
         of players at each position
         """
+
         self.data = self.data.merge(self.position_counts, how="left", on="position")
+        self.data[pd.isnull(self.data['count'])] = self.data['count'].max()
         
     
     def build_ants(self):
@@ -228,8 +245,13 @@ class Colony(object):
                 
             # Get the ant_count / position_count
             n_k = self.ant_count/roster["count"]
-            # Divide pheromone amount on outfielders by the number of outfielders
-            n_k[roster["position"]=="OF"] *= float(self.number_of)
+            # Divide pheromone amount on outfielders/pitchers by the 
+            # number of outfielders/pitchers
+            ofs = get_positional_players(roster, "position", "OF")
+            pitchers = get_positional_players(roster, "position", "SP")
+            
+            n_k.loc[ofs.index] *= float(self.number_of)
+            n_k.loc[pitchers.index] *= float(self.number_p)
             # Scale the roster_metric by n_k, self.q, number of positions
             #delta_tau_k = (ant.roster_metric/(self.q*len(self.positions)))**2*(1/n_k)
             delta_tau_k = (roster.metric_sum/(self.q*len(self.positions)))*(1/n_k)
