@@ -1,3 +1,4 @@
+#/usr/bin/env python
 import os
 
 import argparse
@@ -27,15 +28,21 @@ class GamedayData(object):
                    "proj_points", "opposingTeam"]
 
         data = self.batting[(self.batting.order>0) & (self.batting.ab >=AB_MIN)][columns]
-        non_blacklist_players = data
+        nb_players = data.copy(deep=True) # non-blacklist players
 
         if whitelist_teams:
-            non_blacklist_players = data[data.team.isin(whitelist_teams)]
+            nb_players = nb_players[nb_players.team.isin(whitelist_teams)]
 
         if blacklist_teams:
-            non_blacklist_players = data[~(data.team.isin(blacklist_teams))]
+            nb_players = nb_players[~(nb_players.team.isin(blacklist_teams))]
 
-        return non_blacklist_players
+        return nb_players
+
+def remove_blacklist_players(df, blacklist_teams):
+    if blacklist_teams:
+        return df[~(df.team.isin(blacklist_teams))]
+    else:
+        return df
 
 def main():
 
@@ -54,9 +61,11 @@ def main():
     # Build colony and run on 'proj_points' to get pitchers
     positions = {"P1" : "SP", "P2" : "SP", "C" : "C", "1B" : "1B", "2B" : "2B", "SS": "SS", 
             "3B" : "3B", "OF1" : "OF", "OF2" : "OF", "OF3" : "OF"}
-    
-    colony = Colony("proj_points", data.all_data, positions, alpha = 1.2, 
-        beta = 0.5, evaporation_rate = 0.05, iters=args.iters)
+
+    colony = Colony("proj_points", 
+                    remove_blacklist_players(data.all_data, args.blacklist_teams), 
+                    positions, alpha = 1.2, beta = 0.5, 
+                    evaporation_rate = 0.05, iters=args.iters)
 
     colony.run_ants()
 
